@@ -41,6 +41,9 @@ def string2dict(raw_content, encoding="utf-8"):
     >>> string2dict('key1="value1" key2="value2"') == {'key2': 'value2', 'key1': 'value1'}
     True
 
+    >>> string2dict('key')
+    {'key': ''}
+
     See test_creole2html.TestString2Dict()
     """
     if not PY3 and isinstance(raw_content, TEXT_TYPE):
@@ -51,7 +54,11 @@ def string2dict(raw_content, encoding="utf-8"):
 
     result = {}
     for part in parts:
-        key, value = part.split("=", 1)
+        part_list = part.split("=", 1)
+        # when only key, default value ''
+        if len(part_list) == 1:
+            part_list.append('')
+        key, value = part_list
 
         if value in KEYWORD_MAP:
             # True False or None
