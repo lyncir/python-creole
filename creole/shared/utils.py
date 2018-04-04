@@ -123,6 +123,11 @@ def string2dict_by_var(raw_content, varnames, encoding="utf-8"):
         result[key] = value
         index += 1
 
+    # raw_content is None
+    if (not parts) and varnames:
+        for var_name in varnames:
+            result[var_name] = None
+
     return result
 
 

@@ -309,7 +309,9 @@ class HtmlEmitter(object):
 
         args = node.macro_args
         try:
-            macro_kwargs = string2dict_by_var(args, macro.__code__.co_varnames[:-1])
+            import inspect
+            varnames = inspect.getargspec(macro)[0]
+            macro_kwargs = string2dict_by_var(args, varnames[:-1])
         except ValueError as e:
             exc_info = sys.exc_info()
             return self.error(
