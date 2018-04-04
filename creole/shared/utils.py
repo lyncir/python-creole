@@ -13,6 +13,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 
 import shlex
 import json
+from collections import OrderedDict
 
 from creole.py3compat import TEXT_TYPE, PY3
 
@@ -71,6 +72,56 @@ def string2dict(raw_content, encoding="utf-8"):
                 pass
 
         result[key] = value
+
+    return result
+
+
+def string2dict_by_var(raw_content, varnames, encoding="utf-8"):
+    """
+    convert a string into a dictionary. e.g.:
+
+    >>> string2dict('key="value"')
+    {'key': 'value'}
+
+    >>> string2dict('key1="value1" key2="value2"') == {'key2': 'value2', 'key1': 'value1'}
+    True
+
+    >>> string2dict('value', ('key',))
+    {'key': 'value'}
+
+    See test_creole2html.TestString2Dict()
+    """
+    if not PY3 and isinstance(raw_content, TEXT_TYPE):
+        # shlex.split doesn't work with unicode?!?
+        raw_content = raw_content.encode(encoding)
+
+    parts = shlex.split(raw_content)
+
+    result = OrderedDict()
+    index = 0
+    for part in parts:
+        part_list = part.split("=", 1)
+        if len(part_list) == 1:
+            key = varnames[index]
+            value = part_list[0]
+        else:
+            key, value = part_list
+
+        if key != varnames[index]:
+            raise ValueError
+
+        if value in KEYWORD_MAP:
+            # True False or None
+            value = KEYWORD_MAP[value]
+        else:
+            # A number?
+            try:
+                value = int(value.strip("'\""))
+            except ValueError:
+                pass
+
+        result[key] = value
+        index += 1
 
     return result
 

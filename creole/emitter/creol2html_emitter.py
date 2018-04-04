@@ -18,7 +18,7 @@ import traceback
 
 from creole.parser.creol2html_parser import CreoleParser
 from creole.py3compat import TEXT_TYPE
-from creole.shared.utils import string2dict
+from creole.shared.utils import string2dict_by_var
 
 
 class TableOfContent(object):
@@ -295,20 +295,6 @@ class HtmlEmitter(object):
         text = node.content
         macro = None
 
-        args = node.macro_args
-        try:
-            macro_kwargs = string2dict(args)
-        except ValueError as e:
-            exc_info = sys.exc_info()
-            return self.error(
-                "Wrong macro arguments: %s for macro '%s' (maybe wrong macro tag syntax?)" % (
-                    json.dumps(args), macro_name
-                ),
-                exc_info
-            )
-
-        macro_kwargs["text"] = text
-
         exc_info = None
         if isinstance(self.macros, dict):
             try:
@@ -320,6 +306,20 @@ class HtmlEmitter(object):
                 macro = getattr(self.macros, macro_name)
             except AttributeError as e:
                 exc_info = sys.exc_info()
+
+        args = node.macro_args
+        try:
+            macro_kwargs = string2dict_by_var(args, macro.__code__.co_varnames[:-1])
+        except ValueError as e:
+            exc_info = sys.exc_info()
+            return self.error(
+                "Wrong macro arguments: %s for macro '%s' (maybe wrong macro tag syntax?)" % (
+                    json.dumps(args), macro_name
+                ),
+                exc_info
+            )
+
+        macro_kwargs["text"] = text
 
         if macro == None:
             return self.error(
