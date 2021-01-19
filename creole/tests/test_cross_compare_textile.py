@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 """
     cross compare textile unittest
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,7 +13,6 @@
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
 import unittest
 

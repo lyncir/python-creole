@@ -1,17 +1,12 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-
 """
     python-creole utils
-    ~~~~~~~~~~~~~~~~~~~    
+    ~~~~~~~~~~~~~~~~~~~
 
 
     :copyleft: 2008-2011 by python-creole team, see AUTHORS for more details.
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
 import re
 
@@ -31,7 +26,6 @@ strip_html_regex = re.compile(
     """,
     re.VERBOSE | re.MULTILINE | re.UNICODE
 )
-
 
 
 def strip_html(html_code):
@@ -58,8 +52,6 @@ def strip_html(html_code):
 
     >>> strip_html('<p>a <img src="/image.jpg" /> image.</p>')
     '<p>a <img src="/image.jpg" /> image.</p>'
-
-
     """
 
     def strip_tag(match):
@@ -90,10 +82,10 @@ def strip_html(html_code):
         elif startend_tag:
             # It's a closed start tag e.g.: <br />
 
-            if space_start: # there was space before the tag
+            if space_start:  # there was space before the tag
                 result = " " + result
 
-            if space_end: # there was space after the tag
+            if space_end:  # there was space after the tag
                 result += " "
         else:
             # a start tag e.g.: <strong>

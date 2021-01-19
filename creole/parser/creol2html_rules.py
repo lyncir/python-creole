@@ -1,6 +1,3 @@
-# coding: utf-8
-
-
 """
     Creole Rules for parser
     ~~~~~~~~~~~~~~~~~~~~~~~
@@ -9,12 +6,11 @@
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
 import re
 
 
-class InlineRules(object):
+class InlineRules:
     """
     All inline rules
     """
@@ -26,12 +22,12 @@ class InlineRules(object):
             (?P<url_target> (?P<url_proto> %s )://[^$\s]+ )
         )''' % proto
     # Original uri matching regex inherited from MoinMoin code.
-    #url = r'''(?P<url>
-            #(^ | (?<=\s | [.,:;!?()/=]))
-            #(?P<escaped_url>~)?
-            #(?P<url_target> (?P<url_proto> %s ):\S+? )
-            #($ | (?=\s | [,.:;!?()] (\s | $)))
-        #)''' % proto
+    # url = r'''(?P<url>
+    # (^ | (?<=\s | [.,:;!?()/=]))
+    # (?P<escaped_url>~)?
+    # (?P<url_target> (?P<url_proto> %s ):\S+? )
+    # ($ | (?=\s | [,.:;!?()] (\s | $)))
+    # )''' % proto
     link = r'''(?P<link>
             \[\[
             (?P<link_target>.+?) \s*
@@ -57,8 +53,8 @@ class InlineRules(object):
             (?P<image_target>.+?) \s*
             (\| \s* (?P<image_text>.+?) \s*)?
             }}
-        )(?i)'''
-    #--------------------------------------------------------------------------
+        )'''
+    # --------------------------------------------------------------------------
 
     # a macro like: <<macro>>text<</macro>>
     macro_inline = r'''
@@ -98,11 +94,7 @@ class InlineRules(object):
     char = r'(?P<char> . )'
 
 
-
-
-
-
-class BlockRules(object):
+class BlockRules:
     """
     All used block rules.
     """
@@ -125,7 +117,7 @@ class BlockRules(object):
         )
     '''
 
-    line = r'''(?P<line> ^\s*$ )''' # empty line that separates paragraphs
+    line = r'''(?P<line> ^\s*$ )'''  # empty line that separates paragraphs
 
     head = r'''(?P<head>
         ^
@@ -133,7 +125,7 @@ class BlockRules(object):
         (?P<head_text> .*? )
         (=|\s)*?$
     )'''
-    separator = r'(?P<separator> ^ \s* ---- \s* $ )' # horizontal line
+    separator = r'(?P<separator> ^ \s* ----) [ \t]* $'  # horizontal line
 
     pre_block = r'''(?P<pre_block>
             ^{{{ \s* $
@@ -144,10 +136,10 @@ class BlockRules(object):
             ^}}})
         '''
 
-    # Matches the whole list, separate items are parsed later. The
-    # list *must* start with a single bullet.
+    # Matches the whole list, separate items are parsed later.
+    # The list *must* start with a single bullet.
     list = r'''(?P<list>
-        ^ [ \t]* ([*][^*\#]|[\#][^\#*]).* $
+        ^ \s* ([*][^*\#]|[\#][^\#*]).* $
         ( \n[ \t]* [*\#]+.* $ )*
     )'''
 
@@ -160,7 +152,7 @@ class BlockRules(object):
 
     def __init__(self, blog_line_breaks=True):
         if blog_line_breaks:
-            # use blog style line breaks (every line break would be converted into <br />) 
+            # use blog style line breaks (every line break would be converted into <br />)
             self.text = r'(?P<text> .+ ) (?P<break> (?<!\\)$\n(?!\s*$) )?'
         else:
             # use wiki style line breaks, seperate lines with one space
@@ -174,10 +166,7 @@ class BlockRules(object):
         )
 
 
-
-
-
-class SpecialRules(object):
+class SpecialRules:
     """
     re rules witch not directly used as inline/block rules.
     """
@@ -195,11 +184,11 @@ class SpecialRules(object):
                 (?P<cell> (  %s | [^|])+ )
             ) \s*
         ''' % '|'.join([
-            InlineRules.link,
-            InlineRules.macro_inline, InlineRules.macro_tag,
-            InlineRules.image,
-            InlineRules.pre_inline
-        ])
+        InlineRules.link,
+        InlineRules.macro_inline, InlineRules.macro_tag,
+        InlineRules.image,
+        InlineRules.pre_inline
+    ])
 
     # For pre escaping, in creole 1.0 done with ~:
     pre_escape = r' ^(?P<indent>\s*) ~ (?P<rest> \}\}\} \s*) $'
@@ -224,11 +213,11 @@ INLINE_RULES = (
 def _verify_rules(rules, flags):
     """
     Simple verify the rules -> try to compile it ;)
-    
+
     >>> _verify_rules(INLINE_RULES, INLINE_FLAGS)
     Rule test ok.
-    
-    >>> block_rules = BlockRules()   
+
+    >>> block_rules = BlockRules()
     >>> _verify_rules(block_rules.rules, block_rules.re_flags)
     Rule test ok.
     """
@@ -236,13 +225,13 @@ def _verify_rules(rules, flags):
     rule_list = []
     for rule in rules:
         try:
-#            print(rule)
+            #            print(rule)
             re.compile(rule, flags)
 
             # Try to merge the rules. e.g. Check if group named double used.
             rule_list.append(rule)
             re.compile('|'.join(rule_list), flags)
-        except Exception as err:
+        except Exception:
             print(" *** Error with rule:")
             print(rule)
             print(" -" * 39)

@@ -1,27 +1,21 @@
-# coding: utf-8
-
-
 """
     WikiCreole to HTML converter
 
-    :copyleft: 2008-2015 by python-creole team, see AUTHORS for more details.
+    :copyleft: 2008-2020 by python-creole team, see AUTHORS for more details.
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
 
-from __future__ import division, absolute_import, print_function, unicode_literals
-
 import json
-from xml.sax.saxutils import escape
 import sys
 import traceback
+from xml.sax.saxutils import escape
 
 from creole.parser.creol2html_parser import CreoleParser
-from creole.py3compat import TEXT_TYPE
 from creole.shared.utils import string2dict_by_var
 
 
-class TableOfContent(object):
+class TableOfContent:
     def __init__(self):
         self.max_depth = None
         self.headlines = []
@@ -57,9 +51,9 @@ class TableOfContent(object):
 
             if index > stack_length:
                 for _ in range(stack_length, index):
-                    l = []
-                    stack[-1].append(l)
-                    stack.append(l)
+                    nest_list = []
+                    stack[-1].append(nest_list)
+                    stack.append(nest_list)
             elif index < stack_length:
                 stack = stack[:index]
 
@@ -69,14 +63,14 @@ class TableOfContent(object):
 
     def nested_headlines2html(self, nested_headlines, level=0):
         """Convert a python nested list like the one representing the toc to an html equivalent."""
-        indent = "\t"*level
-        if isinstance(nested_headlines, TEXT_TYPE):
-            return '%s<li><a href="#%s">%s</a></li>\n' % (indent, nested_headlines, nested_headlines)
+        indent = "\t" * level
+        if isinstance(nested_headlines, str):
+            return f'{indent}<li><a href="#{nested_headlines}">{nested_headlines}</a></li>\n'
         elif isinstance(nested_headlines, list):
-            html = '%s<ul>\n' % indent
+            html = f'{indent}<ul>\n'
             for elt in nested_headlines:
                 html += self.nested_headlines2html(elt, level + 1)
-            html += '%s</ul>' % indent
+            html += f'{indent}</ul>'
             if level > 0:
                 html += "\n"
             return html
@@ -96,17 +90,17 @@ class TableOfContent(object):
         return document
 
 
-
-class HtmlEmitter(object):
+class HtmlEmitter:
     """
     Generate HTML output for the document
     tree consisting of DocNodes.
     """
+
     def __init__(self, root, macros=None, verbose=None, stderr=None, strict=False):
 
         self.root = root
 
-        if callable(macros) == True:
+        if callable(macros):
             # was a DeprecationWarning in the past
             raise TypeError("Callable macros are not supported anymore!")
 
@@ -115,7 +109,7 @@ class HtmlEmitter(object):
         else:
             self.macros = macros
 
-        if not "toc" in root.used_macros:
+        if "toc" not in root.used_macros:
             # The document has no <<toc>>
             self.toc = None
         else:
@@ -131,7 +125,6 @@ class HtmlEmitter(object):
                 except AttributeError:
                     self.toc = TableOfContent()
                     self.macros.toc = self.toc
-
 
         if verbose is None:
             self.verbose = 1
@@ -149,7 +142,7 @@ class HtmlEmitter(object):
         """Try to emit whatever text is in the node."""
         try:
             return node.children[0].content or ''
-        except:
+        except BaseException:
             return node.content or ''
 
     def html_escape(self, text):
@@ -167,10 +160,10 @@ class HtmlEmitter(object):
         return self.html_escape(node.content)
 
     def separator_emit(self, node):
-        return '<hr />\n\n'
+        return '<hr />\n'
 
     def paragraph_emit(self, node):
-        return '<p>%s</p>\n' % self.emit_children(node)
+        return f'<p>{self.emit_children(node)}</p>\n'
 
     def _list_emit(self, node, list_type):
         if node.parent.kind in ("document",):
@@ -204,61 +197,64 @@ class HtmlEmitter(object):
         return self._list_emit(node, list_type="li")
 
     def table_emit(self, node):
-        return '<table>\n%s</table>\n' % self.emit_children(node)
+        return f'<table>\n{self.emit_children(node)}</table>\n'
 
     def table_row_emit(self, node):
-        return '<tr>\n%s</tr>\n' % self.emit_children(node)
+        return f'<tr>\n{self.emit_children(node)}</tr>\n'
 
     def table_cell_emit(self, node):
-        return '\t<td>%s</td>\n' % self.emit_children(node)
+        return f'\t<td>{self.emit_children(node)}</td>\n'
 
     def table_head_emit(self, node):
-        return '\t<th>%s</th>\n' % self.emit_children(node)
+        return f'\t<th>{self.emit_children(node)}</th>\n'
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _typeface(self, node, tag):
-        return '<%(tag)s>%(data)s</%(tag)s>' % {
-            "tag": tag,
-            "data": self.emit_children(node),
-        }
+        return '<{tag}>{data}</{tag}>'.format(
+            tag=tag,
+            data=self.emit_children(node),
+        )
 
     # TODO: How can we generalize that:
     def emphasis_emit(self, node):
         return self._typeface(node, tag="i")
+
     def strong_emit(self, node):
         return self._typeface(node, tag="strong")
+
     def monospace_emit(self, node):
         return self._typeface(node, tag="tt")
+
     def superscript_emit(self, node):
         return self._typeface(node, tag="sup")
+
     def subscript_emit(self, node):
         return self._typeface(node, tag="sub")
+
     def underline_emit(self, node):
         return self._typeface(node, tag="u")
+
     def small_emit(self, node):
         return self._typeface(node, tag="small")
+
     def delete_emit(self, node):
         return self._typeface(node, tag="del")
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def header_emit(self, node):
-        header = '<h%d>%s</h%d>' % (
-                node.level, self.html_escape(node.content), node.level
-        )
+        header = f'<h{node.level:d}>{self.html_escape(node.content)}</h{node.level:d}>'
         if self.toc is not None:
             self.toc.add_headline(node.level, node.content)
             # add link attribute for toc navigation
-            header = '<a name="%s">%s</a>' % (
-                self.html_escape(node.content), header
-            )
+            header = f'<a name="{self.html_escape(node.content)}">{header}</a>'
 
         header += "\n"
         return header
 
     def preformatted_emit(self, node):
-        return '<pre>%s</pre>' % self.html_escape(node.content)
+        return f'<pre>{self.html_escape(node.content)}</pre>'
 
     def link_emit(self, node):
         target = node.content
@@ -267,8 +263,7 @@ class HtmlEmitter(object):
         else:
             inside = self.html_escape(target)
 
-        return '<a href="%s">%s</a>' % (
-            self.attr_escape(target), inside)
+        return f'<a href="{self.attr_escape(target)}">{inside}</a>'
 
     def image_emit(self, node):
         target = node.content
@@ -282,15 +277,13 @@ class HtmlEmitter(object):
                     w_str, h_str = size_str.split("x", 1)
                     width = int(w_str.strip())
                     height = int(h_str.strip())
-                    return '<img src="%s" title="%s" alt="%s" width="%s" height="%s" />' % (
-                        self.attr_escape(target), title, title, width, height)
-            except:
+                    return f'<img src="{self.attr_escape(target)}" title="{title}" alt="{title}" width="{width}" height="{height}" />'
+            except BaseException:
                 pass
-        return '<img src="%s" title="%s" alt="%s" />' % (
-            self.attr_escape(target), text, text)
+        return f'<img src="{self.attr_escape(target)}" title="{text}" alt="{text}" />'
 
     def macro_emit(self, node):
-        #print(node.debug())
+        # print(node.debug())
         macro_name = node.macro_name
         text = node.content
         macro = None
@@ -315,9 +308,7 @@ class HtmlEmitter(object):
         except ValueError as e:
             exc_info = sys.exc_info()
             return self.error(
-                "Wrong macro arguments: %s for macro '%s' (maybe wrong macro tag syntax?)" % (
-                    json.dumps(args), macro_name
-                ),
+                f"Wrong macro arguments: {json.dumps(args)} for macro '{macro_name}' (maybe wrong macro tag syntax?)",
                 exc_info
             )
 
@@ -325,14 +316,14 @@ class HtmlEmitter(object):
 
         if macro == None:
             return self.error(
-                "Macro '%s' doesn't exist" % macro_name,
+                f"Macro '{macro_name}' doesn't exist",
                 exc_info
             )
 
         try:
             result = macro(**macro_kwargs)
         except TypeError as err:
-            msg = "Macro '%s' error: %s" % (macro_name, err)
+            msg = f"Macro '{macro_name}' error: {err}"
             exc_info = sys.exc_info()
             if self.verbose > 1:
                 if self.verbose > 2:
@@ -348,23 +339,23 @@ class HtmlEmitter(object):
                 else:
                     try:
                         sourceline = inspect.getsourcelines(macro)[0][0].strip()
-                    except IOError as err:
-                        evalue = etype("%s (error getting sourceline: %s from %s)" % (evalue, err, filename))
+                    except OSError as err:
+                        evalue = etype(f"{evalue} (error getting sourceline: {err} from {filename})")
                     else:
-                        evalue = etype("%s (sourceline: %r from %s)" % (evalue, sourceline, filename))
+                        evalue = etype(f"{evalue} (sourceline: {sourceline!r} from {filename})")
                     exc_info = etype, evalue, etb
 
             return self.error(msg, exc_info)
         except Exception as err:
             return self.error(
-                "Macro '%s' error: %s" % (macro_name, err),
+                f"Macro '{macro_name}' error: {err}",
                 exc_info=sys.exc_info()
             )
 
-        if not isinstance(result, TEXT_TYPE):
-            msg = "Macro '%s' doesn't return a unicode string!" % macro_name
+        if not isinstance(result, str):
+            msg = f"Macro '{macro_name}' doesn't return a unicode string!"
             if self.verbose > 1:
-                msg += " - returns: %r, type %r" % (result, type(result))
+                msg += f" - returns: {result!r}, type {type(result)!r}"
             return self.error(msg)
 
         if node.kind == "macro_block":
@@ -387,15 +378,15 @@ class HtmlEmitter(object):
 
     def pre_block_emit(self, node):
         """ pre block, with newline at the end """
-        return "<pre>%s</pre>\n" % self.html_escape(node.content)
+        return f"<pre>{self.html_escape(node.content)}</pre>\n"
 
     def pre_inline_emit(self, node):
         """ pre without newline at the end """
-        return "<tt>%s</tt>" % self.html_escape(node.content)
+        return f"<tt>{self.html_escape(node.content)}</tt>"
 
     def default_emit(self, node):
         """Fallback function for emitting unknown nodes."""
-        raise NotImplementedError("Node '%s' unknown" % node.kind)
+        raise NotImplementedError(f"Node '{node.kind}' unknown")
 
     def emit_children(self, node):
         """Emit all the children of a node."""
@@ -404,7 +395,7 @@ class HtmlEmitter(object):
     def emit_node(self, node):
         """Emit a single node."""
         #print("%s_emit: %r" % (node.kind, node.content))
-        emit = getattr(self, '%s_emit' % node.kind, self.default_emit)
+        emit = getattr(self, f'{node.kind}_emit', self.default_emit)
         return emit(node)
 
     def emit(self):
@@ -425,7 +416,7 @@ class HtmlEmitter(object):
             self.stderr.write(exception)
 
         if self.verbose > 0:
-            return "[Error: %s]\n" % text
+            return f"[Error: {text}]\n"
         else:
             # No error output
             return ""

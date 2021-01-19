@@ -1,6 +1,3 @@
-# coding: utf-8
-
-
 """
     Creole wiki markup parser
 
@@ -18,21 +15,18 @@
       unrecognized schemes (like wtf://server/path) triggering italic rendering
       for the rest of the paragraph.
 
-    :copyleft: 2008-2011 by python-creole team, see AUTHORS for more details.
+    :copyleft: 2008-2020 by python-creole team, see AUTHORS for more details.
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
-
 import re
+from pprint import pformat
 
-from creole.parser.creol2html_rules import BlockRules, INLINE_FLAGS, INLINE_RULES, \
-    SpecialRules, InlineRules
-from creole.py3compat import TEXT_TYPE
+from creole.parser.creol2html_rules import INLINE_FLAGS, INLINE_RULES, BlockRules, InlineRules, SpecialRules
 from creole.shared.document_tree import DocNode
 
 
-class CreoleParser(object):
+class CreoleParser:
     """
     Parse the raw text and create a document object
     that can be converted into output using Emitter.
@@ -58,28 +52,28 @@ class CreoleParser(object):
     # For inline elements:
     inline_re = re.compile('|'.join(INLINE_RULES), INLINE_FLAGS)
 
-
-    def __init__(self, raw, block_rules=None, blog_line_breaks=True):
-        assert isinstance(raw, TEXT_TYPE)
+    def __init__(self, raw, block_rules=None, blog_line_breaks=True, debug=False):
+        assert isinstance(raw, str)
         self.raw = raw
 
         if block_rules is None:
             block_rules = BlockRules(blog_line_breaks=blog_line_breaks)
 
+        self.blog_line_breaks = blog_line_breaks
+        self.debug = debug  # TODO: use logging
+
         # setup block element rules:
         self.block_re = re.compile('|'.join(block_rules.rules), block_rules.re_flags)
-
-        self.blog_line_breaks = blog_line_breaks
 
         self.root = DocNode('document', None)
         self.cur = self.root        # The most recent document node
         self.text = None            # The node to add inline characters to
-        self.last_text_break = None # Last break node, inserted by _text_repl()
+        self.last_text_break = None  # Last break node, inserted by _text_repl()
 
         # Filled with all macros that's in the text
         self.root.used_macros = set()
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def cleanup_break(self, old_cur):
         """
@@ -101,22 +95,22 @@ class CreoleParser(object):
         of one of the listed kinds of nodes or root.
         Start at the node node.
         """
-        self.cleanup_break(node) # remove unused end line breaks.
-        while node.parent is not None and not node.kind in kinds:
+        self.cleanup_break(node)  # remove unused end line breaks.
+        while node.parent is not None and node.kind not in kinds:
             node = node.parent
 
         return node
 
     def _upto_block(self):
-        self.cur = self._upto(self.cur, ('document',))# 'section', 'blockquote'))
+        self.cur = self._upto(self.cur, ('document',))  # 'section', 'blockquote'))
 
-    #__________________________________________________________________________
+    # __________________________________________________________________________
     # The _*_repl methods called for matches in regexps. Sometimes the
     # same method needs several names, because of group names in regexps.
 
     def _text_repl(self, groups):
-#        print("_text_repl()", self.cur.kind)
-#        self.debug_groups(groups)
+        #        print("_text_repl()", self.cur.kind)
+        #        self.debug_groups(groups)
 
         if self.cur.kind in ('table', 'table_row', 'bullet_list', 'number_list'):
             self._upto_block()
@@ -126,14 +120,14 @@ class CreoleParser(object):
 
         text = groups.get('text', "")
 
-        if groups.get('space'):
+        if groups.get('space') and self.cur.children:
             # use wikipedia style line breaks and seperate a new line with one space
             text = " " + text
 
         self.parse_inline(text)
 
         if groups.get('break') and self.cur.kind in ('paragraph',
-            'emphasis', 'strong', 'pre_inline'):
+                                                     'emphasis', 'strong', 'pre_inline'):
             self.last_text_break = DocNode('break', self.cur, "")
 
         self.text = None
@@ -172,14 +166,14 @@ class CreoleParser(object):
     _link_target_repl = _link_repl
     _link_text_repl = _link_repl
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _add_macro(self, groups, macro_type, name_key, args_key, text_key=None):
         """
         generic method to handle the macro, used for all variants:
         inline, inline-tag, block
         """
-        #self.debug_groups(groups)
+        # self.debug_groups(groups)
         assert macro_type in ("macro_inline", "macro_block")
 
         if text_key:
@@ -230,7 +224,6 @@ class CreoleParser(object):
     _macro_tag_name_repl = _macro_tag_repl
     _macro_tag_args_repl = _macro_tag_repl
 
-
     def _macro_inline_repl(self, groups):
         """
         inline macro tag with data, e.g.: <<macro>>text<</macro>>
@@ -246,7 +239,7 @@ class CreoleParser(object):
     _macro_inline_args_repl = _macro_inline_repl
     _macro_inline_text_repl = _macro_inline_repl
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _image_repl(self, groups):
         """Handles images and attachemnts included in the page."""
@@ -273,17 +266,21 @@ class CreoleParser(object):
         level = len(bullet) - 1
         lst = self.cur
         # Find a list of the same kind and level up the tree
-        while (lst and
-                   not (lst.kind in ('number_list', 'bullet_list') and
-                        lst.level == level) and
-                    not lst.kind in ('document', 'section', 'blockquote')):
+        while (
+            lst and not (
+                lst.kind in (
+                    'number_list',
+                    'bullet_list') and lst.level == level) and lst.kind not in (
+                'document',
+                'section',
+                'blockquote')):
             lst = lst.parent
         if lst and lst.kind == kind:
             self.cur = lst
         else:
             # Create a new level of list
             self.cur = self._upto(self.cur,
-                ('list_item', 'document', 'section', 'blockquote'))
+                                  ('list_item', 'document', 'section', 'blockquote'))
             self.cur = DocNode(kind, self.cur)
             self.cur.level = level
         self.cur = DocNode('list_item', self.cur)
@@ -333,6 +330,7 @@ class CreoleParser(object):
         self._upto_block()
         kind = groups.get('pre_block_kind', None)
         text = groups.get('pre_block_text', "")
+
         def remove_tilde(m):
             return m.group('indent') + m.group('rest')
         text = self.pre_escape_re.sub(remove_tilde, text)
@@ -355,20 +353,20 @@ class CreoleParser(object):
     _pre_inline_text_repl = _pre_inline_repl
     _pre_inline_head_repl = _pre_inline_repl
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _inline_mark(self, groups, key):
         self.cur = DocNode(key, self.cur)
 
         self.text = None
-        text = groups["%s_text" % key]
+        text = groups[f"{key}_text"]
         self.parse_inline(text)
 
         self.cur = self._upto(self.cur, (key,)).parent
         self.text = None
 
-
     # TODO: How can we generalize that:
+
     def _emphasis_repl(self, groups):
         self._inline_mark(groups, key='emphasis')
     _emphasis_text_repl = _emphasis_repl
@@ -401,7 +399,7 @@ class CreoleParser(object):
         self._inline_mark(groups, key='delete')
     _delete_text_repl = _delete_repl
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _linebreak_repl(self, groups):
         DocNode('break', self.cur, None)
@@ -418,23 +416,24 @@ class CreoleParser(object):
             self.text = DocNode('text', self.cur, "")
         self.text.content += groups.get('char', "")
 
-    #--------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
     def _replace(self, match):
         """Invoke appropriate _*_repl method. Called for every matched group."""
 
-#        def debug(groups):
-#            from pprint import pformat
-#            data = dict([
-#                group for group in groups.items() if group[1] is not None
-#            ])
-#            print("%s\n" % pformat(data))
+        def debug(groups):
+            data = dict([
+                group for group in groups.items() if group[1] is not None
+            ])
+            print(pformat(data))
 
         groups = match.groupdict()
         for name, text in groups.items():
             if text is not None:
-                #if name != "char": debug(groups)
-                replace_method = getattr(self, '_%s_repl' % name)
+                if self.debug and name != "char":
+                    # TODO: use logging
+                    debug(groups)
+                replace_method = getattr(self, f'_{name}_repl')
                 replace_method(groups)
                 return
 
@@ -450,27 +449,31 @@ class CreoleParser(object):
         """Parse the text given as self.raw and return DOM tree."""
         # convert all lineendings to \n
         text = self.raw.replace("\r\n", "\n").replace("\r", "\n")
+        if self.debug:
+            # TODO: use logging
+            print(repr(text))
         self.parse_block(text)
         return self.root
 
+    # --------------------------------------------------------------------------
 
-    #--------------------------------------------------------------------------
-    def debug(self, start_node=None):
+    def debug_tree(self, start_node=None):
         """
         Display the current document tree
         """
         print("_" * 80)
 
-        if start_node == None:
+        if start_node is None:
             start_node = self.root
             print("  document tree:")
         else:
-            print("  tree from %s:" % start_node)
+            print(f"  tree from {start_node}:")
 
         print("=" * 80)
+
         def emit(node, ident=0):
             for child in node.children:
-                print("%s%s: %r" % (" " * ident, child.kind, child.content))
+                print(f"{' ' * ident}{child.kind}: {child.content!r}")
                 emit(child, ident + 4)
         emit(start_node)
         print("*" * 80)
@@ -480,11 +483,8 @@ class CreoleParser(object):
         print("  debug groups:")
         for name, text in groups.items():
             if text is not None:
-                print("%15s: %r" % (name, text))
+                print(f"{name:>15}: {text!r}")
         print("-" * 80)
-
-
-
 
 
 if __name__ == "__main__":
@@ -507,9 +507,8 @@ if __name__ == "__main__":
     def display_match(match):
         groups = match.groupdict()
         for name, text in groups.items():
-            if name != "char" and text != None:
-                print("%20s: %r" % (name, text))
-
+            if name != "char" and text is not None:
+                print(f"{name:>20}: {text!r}")
 
     parser = CreoleParser("", blog_line_breaks=blog_line_breaks)
 
@@ -520,7 +519,6 @@ if __name__ == "__main__":
     print("_" * 80)
     print("merged inline rules test:")
     re.sub(parser.inline_re, display_match, txt)
-
 
     def test_single(rules, flags, txt):
         for rule in rules:
@@ -535,6 +533,5 @@ if __name__ == "__main__":
     print("_" * 80)
     print("single inline rules match test:")
     test_single(INLINE_RULES, INLINE_FLAGS, txt)
-
 
     print("---END---")

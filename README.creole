@@ -1,11 +1,11 @@
-= about =
+= about python-creole =
 
 python-creole is a OpenSource (GPL) Python lib for converting markups.
 python-creole is pure python. No external libs needed.
 
-Compatible Python Versions (see also [[https://github.com/jedie/python-creole/blob/master/.travis.yml|.travis.yml]]):
- * 2.7.x, 3.3, 3.4, 3.5, 3.6
- * PyPy (Python v2 and v3)
+Compatible Python Versions (see [[https://github.com/jedie/python-creole/blob/master/tox.ini|tox.ini]] or [[https://github.com/jedie/python-creole/blob/master/.travis.yml|.travis.yml]]):
+ * 3.9, 3.8, 3.7, 3.6
+ * PyPy3
 
 
 Existing converters:
@@ -18,9 +18,11 @@ Existing converters:
 
 The creole2html part based on the creole markup parser and emitter from the MoinMoin project by Radomir Dopieralski and Thomas Waldmann.
 
+| {{https://github.com/jedie/python-creole/workflows/test/badge.svg?branch=master|Build Status on github}} ||
 | {{https://travis-ci.org/jedie/python-creole.svg|Build Status on travis-ci.org}} | [[https://travis-ci.org/jedie/python-creole/|travis-ci.org/jedie/python-creole]] |
 | {{https://coveralls.io/repos/jedie/python-creole/badge.svg|Coverage Status on coveralls.io}} | [[https://coveralls.io/r/jedie/python-creole|coveralls.io/r/jedie/python-creole]] |
 | {{https://landscape.io/github/jedie/python-creole/master/landscape.svg|Status on landscape.io}} | [[https://landscape.io/github/jedie/python-creole/master|landscape.io/github/jedie/python-creole/master]] |
+| {{https://badge.fury.io/py/python-creole.svg|PyPi version}} | [[https://pypi.org/project/python-creole/|pypi.org/project/python-creole/]] |
 
 
 = install =
@@ -30,6 +32,8 @@ Python packages available on: [[http://pypi.python.org/pypi/python-creole/]]
 {{{
 ~$ pip install python-creole
 }}}
+
+To setup a virtualenv via Poetry, see {{{unittests}}} section below.
 
 == dependencies ==
 
@@ -170,18 +174,49 @@ Creole Markup Cheat Sheet can be found here: http://www.wikicreole.org/wiki/Chea
 
 == unittests ==
 
-We use **nose** for running unittests (with DocTests).
-Please install it, e.g.:
 {{{
-.../your/env/$ source bin/activate
-.../your/env/$ pip install nose
+# clone repository (or use your fork):
+~$ git clone https://github.com/jedie/python-creole.git
+~$ cd python-creole
+
+# install or update poetry:
+~/python-creole$ make install-poetry
+
+# install python-creole via poetry:
+~/python-creole$ make install
+
+# Run pytest:
+~/python-creole$ make pytest
+
+# Run pytest via tox with all environments:
+~/python-creole$ make tox
+
+# Run pytest via tox with one Python version:
+~/python-creole$ make tox-py38
+~/python-creole$ make tox-py37
+~/python-creole$ make tox-py36
 }}}
 
-To run the unittests:
-{{{
-.../path/to/python-creole$ python setup.py nosetests
-}}}
+== make targets ==
 
+To see all make targets, just call {{{make}}}:
+{{{
+~/python-creole$ make
+help                 List all commands
+install-poetry       install or update poetry
+install              install python-creole via poetry
+lint                 Run code formatters and linter
+fix-code-style       Fix code formatting
+tox-listenvs         List all tox test environments
+tox                  Run pytest via tox with all environments
+tox-py36             Run pytest via tox with *python v3.6*
+tox-py37             Run pytest via tox with *python v3.7*
+tox-py38             Run pytest via tox with *python v3.8*
+tox-py39             Run pytest via tox with *python v3.9*
+pytest               Run pytest
+update-rst-readme    update README.rst from README.creole
+publish              Release new version to PyPi
+}}}
 
 == Use creole in README ==
 
@@ -193,6 +228,47 @@ Note: In this case you must install **docutils**! See above.
 
 = history =
 
+* *dev* - [[https://github.com/jedie/python-creole/compare/v1.4.9...master|compare v1.4.9...master]]
+** TBC
+* v1.4.9 - 2020-11-4 - [[https://github.com/jedie/python-creole/compare/v1.4.8...v1.4.9|compare v1.4.8...v1.4.9]]
+** Add missing classifier for Python 3.9 ([[https://github.com/jedie/python-creole/pull/55|Contributed by jugmac00]])
+** Update readme test
+* v1.4.8 - 2020-10-17 - [[https://github.com/jedie/python-creole/compare/v1.4.7...v1.4.8|compare v1.4.7...v1.4.8]]
+** Validate generated {{{README.rst}}} with [[https://pypi.org/project/readme-renderer/|readme-renderer]]
+* v1.4.7 - 2020-10-17 - [[https://github.com/jedie/python-creole/compare/v1.4.6...v1.4.7|compare v1.4.6...v1.4.7]]
+** {{{update_rst_readme()}}} will touch {{{README.rst}}} if there are not change (timestamp will not changed in file)
+** Run tests with Python 3.9, too.
+** Some meta updates to project setup
+* v1.4.6 - 2020-02-13 - [[https://github.com/jedie/python-creole/compare/v1.4.5...v1.4.6|compare v1.4.5...v1.4.6]]
+** less restricted dependency specification
+* v1.4.5 - 2020-02-13 - [[https://github.com/jedie/python-creole/compare/v1.4.4...v1.4.5|compare v1.4.4...v1.4.5]]
+** new: {{{creole.setup_utils.assert_rst_readme}}} for project setup tests
+** use https://github.com/ymyzk/tox-gh-actions on gitlab CI
+* v1.4.4 - 2020-02-07 - [[https://github.com/jedie/python-creole/compare/v1.4.3...v1.4.4|compare v1.4.3...v1.4.4]]
+** Fix #44: Move {{{poetry-publish}}} to {{{dev-dependencies}}} and lower {{{docutils}}} requirement to {{^0.15}}
+** some code style updated
+** Always update README.rst before publish
+* v1.4.3 - 2020-02-01 - [[https://github.com/jedie/python-creole/compare/v1.4.2...v1.4.3|compare v1.4.2...v1.4.3]]
+** Use new [[https://pypi.org/project/poetry-publish/|poetry-publish]] for {{{make publish}}}
+* v1.4.2 - 2020-02-01 - [[https://github.com/jedie/python-creole/compare/v1.4.1...v1.4.2|compare v1.4.1...v1.4.2]]
+** Update CI configs on github and travis
+** Update {{{Makefile}}}: add {{{make publish}}} and {{{make update-rst-readme}}}
+** Add generated {{{README.rst}}} in repository to fix install problems about missing readme
+* v1.4.1 - 2020-01-19 - [[https://github.com/jedie/python-creole/compare/v1.4.0...v1.4.1|compare v1.4.0...v1.4.1]]
+** Remove Python v2 support code
+** [[https://github.com/jedie/python-creole/issues/26|Fix "Undefined substitution referenced" error]] contributed by dforsi
+** [[https://github.com/jedie/python-creole/pull/37|Fix regression in tests for setup_utils]] contributed by jugmac00
+** Fix code style with: autopep8
+** sort imports with isort
+** change old {{{%-formatted}}} and {{{.format(...)}}} strings into Python 3.6+'s {{{f-strings}}} with flynt
+** Activate linting in CI pipeline
+* v1.4.0 - 2020-01-19 - [[https://github.com/jedie/python-creole/compare/v1.3.2...v1.4.0|compare v1.3.2...v1.4.0]]
+** modernize project:
+*** use poetry
+*** Add a {{{Makefile}}}
+*** use pytest and tox
+*** remove Python v2 support
+*** Test with Python v3.6, v3.7 and v3.8
 * v1.3.2 - 2018-02-27 - [[https://github.com/jedie/python-creole/compare/v1.3.1...v1.3.2|compare v1.3.1...v1.3.2]]
 ** Adding optional img size to creole2html and html2creole contributed by [[https://github.com/JohnAD|John Dupuy]]
 ** run tests also with python 3.5 and 3.6
@@ -216,7 +292,7 @@ Note: In this case you must install **docutils**! See above.
 ** NEW: Add {{{<<toc>>}}} macro to create a table of contents list
 ** Bugfix for: AttributeError: 'CreoleParser' object has no attribute '_escaped_char_repl'
 ** Bugfix for: AttributeError: 'CreoleParser' object has no attribute '_escaped_url_repl'
-** API Change: Callable macros will raise a TypeError instead of create a DeprecationWarning (Was removed in v0.5) 
+** API Change: Callable macros will raise a TypeError instead of create a DeprecationWarning (Was removed in v0.5)
 * v1.1.1 - 2013-11-08
 ** Bugfix: Setup script exited with error: can't copy 'README.creole': doesn't exist or not a regular file
 * v1.1.0 - 2013-10-28

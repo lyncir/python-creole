@@ -1,21 +1,16 @@
-# coding: utf-8
-
-
 """
     python creole utilities
     ~~~~~~~~~~~~~~~~~~~~~~~
 
-    :copyleft: 2011-2014 by python-creole team, see AUTHORS for more details.
+    :copyleft: 2011-2020 by python-creole team, see AUTHORS for more details.
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
-import shlex
 import json
+import shlex
 from collections import OrderedDict
 
-from creole.py3compat import TEXT_TYPE, PY3
 
 try:
     from pygments import lexers
@@ -32,7 +27,8 @@ KEYWORD_MAP = {
     "None": None,
 }
 
-def string2dict(raw_content, encoding="utf-8"):
+
+def string2dict(raw_content):
     """
     convert a string into a dictionary. e.g.:
 
@@ -47,10 +43,6 @@ def string2dict(raw_content, encoding="utf-8"):
 
     See test_creole2html.TestString2Dict()
     """
-    if not PY3 and isinstance(raw_content, TEXT_TYPE):
-        # shlex.split doesn't work with unicode?!?
-        raw_content = raw_content.encode(encoding)
-
     parts = shlex.split(raw_content)
 
     result = {}
@@ -91,10 +83,6 @@ def string2dict_by_var(raw_content, varnames, encoding="utf-8"):
 
     See test_creole2html.TestString2Dict()
     """
-    if not PY3 and isinstance(raw_content, TEXT_TYPE):
-        # shlex.split doesn't work with unicode?!?
-        raw_content = raw_content.encode(encoding)
-
     parts = shlex.split(raw_content)
 
     result = OrderedDict()
@@ -146,13 +134,13 @@ def dict2string(d):
     attr_list = []
     for key, value in sorted(d.items()):
         value_string = json.dumps(value)
-        attr_list.append("%s=%s" % (key, value_string))
+        attr_list.append(f"{key}={value_string}")
     return " ".join(attr_list)
 
 
 def get_pygments_formatter():
     if PYGMENTS:
-        return HtmlFormatter(lineos = True, encoding='utf-8',
+        return HtmlFormatter(lineos=True, encoding='utf-8',
                              style='colorful', outencoding='utf-8',
                              cssclass='pygments')
 
@@ -161,7 +149,7 @@ def get_pygments_lexer(source_type, code):
     if PYGMENTS:
         try:
             return lexers.get_lexer_by_name(source_type)
-        except:
+        except BaseException:
             return lexers.guess_lexer(code)
     else:
         return None

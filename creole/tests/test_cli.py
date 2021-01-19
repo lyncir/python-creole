@@ -1,31 +1,25 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 """
     unittest for CLI
     ~~~~~~~~~~~~~~~~
 
-    :copyleft: 2013-2015 by python-creole team, see AUTHORS for more details.
+    :copyleft: 2013-2020 by python-creole team, see AUTHORS for more details.
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
-import subprocess
-import unittest
 import sys
-import os
 import tempfile
+import unittest
 
-from creole import cmdline
+from creole import VERSION_STRING, cmdline
 from creole.tests.utils.base_unittest import BaseCreoleTest
-from creole import VERSION_STRING
 from creole.tests.utils.unittest_subprocess import SubprocessMixin
+
 
 CMDS = ("creole2html", "html2creole", "html2rest", "html2textile")
 
 
-class CliTestMixins(object):
+class CliTestMixins:
     def test_creole2html(self):
         self._test_convert(
             source_content=b"= test creole2html =",
@@ -71,7 +65,7 @@ class CreoleCLITests(BaseCreoleTest, SubprocessMixin, CliTestMixins):
         dest_file = tempfile.NamedTemporaryFile()
         destfilepath = dest_file.name
 
-        stdout=(
+        stdout = (
             "Convert '%(src)s' to '%(dst)s' with %(prog)s (codec: utf-8)\n"
             "done. '%(dst)s' created."
         ) % {
@@ -83,7 +77,6 @@ class CreoleCLITests(BaseCreoleTest, SubprocessMixin, CliTestMixins):
         self.assertSubprocess(
             popen_args=[cli_str, sourcefilepath, destfilepath],
             retcode=0, stdout=stdout,
-            verbose=False,
         )
 
         dest_file.seek(0)
@@ -94,22 +87,18 @@ class CreoleCLITests(BaseCreoleTest, SubprocessMixin, CliTestMixins):
 
     def test_version(self):
         for cmd in CMDS:
-            version_info = "%s from python-creole v%s" % (
-                cmd, VERSION_STRING
-            )
+            version_info = f"{cmd} from python-creole v{VERSION_STRING}"
             self.assertSubprocess(
                 popen_args=[cmd, "--version"],
                 retcode=0,
                 stdout=version_info,
-                verbose=False,
             )
-
 
 
 class CreoleCLITestsDirect(BaseCreoleTest, CliTestMixins):
 
     def setUp(self):
-        super(CreoleCLITestsDirect, self).setUp()
+        super().setUp()
         self._old_sys_argv = sys.argv[:]
 
     def tearDown(self):
@@ -127,7 +116,7 @@ class CreoleCLITestsDirect(BaseCreoleTest, CliTestMixins):
         destfilepath = dest_file.name
 
         sys.argv = [cli_str, sourcefilepath, destfilepath]
-        cli = getattr(cmdline, "cli_%s" % cli_str)
+        cli = getattr(cmdline, f"cli_{cli_str}")
         cli()
 
         dest_file.seek(0)
