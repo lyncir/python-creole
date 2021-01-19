@@ -1,17 +1,13 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 """
     rest2html unittest
     ~~~~~~~~~~~~~~~~~~
-    
+
     Unittests for rest2html, see: creole/rest2html/clean_writer.py
 
     :copyleft: 2011-2012 by python-creole team, see AUTHORS for more details.
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
-from __future__ import division, absolute_import, print_function, unicode_literals
 
 import tempfile
 import unittest
@@ -24,7 +20,7 @@ class ReSt2HtmlTests(BaseCreoleTest):
         self.assert_rest2html("""
             :homepage:
               http://code.google.com/p/python-creole/
-            
+
             :sourcecode:
               http://github.com/jedie/python-creole
         """, """
@@ -61,17 +57,17 @@ class ReSt2HtmlTests(BaseCreoleTest):
     def test_clean_list(self):
         self.assert_rest2html("""
             * item 1
-            
+
                 * item 1.1
-                
+
                 * item 1.2
-            
+
             * item 2
-            
+
             numbered list:
-            
+
             #. item A
-        
+
             #. item B
         """, """
             <ul>
@@ -96,7 +92,7 @@ class ReSt2HtmlTests(BaseCreoleTest):
             ======
             head 1
             ======
-            
+
             ------
             head 2
             ------
@@ -108,11 +104,11 @@ class ReSt2HtmlTests(BaseCreoleTest):
     def test_include_disabled_by_default(self):
         self.assert_rest2html("""
             Include should be disabled by default.
-            
+
             .. include:: doesntexist.txt
         """, """
             <p>Include should be disabled by default.</p>
-        """, report_level=3) # Set log level to "error" to suppress the waring output
+        """, report_level=3)  # Set log level to "error" to suppress the waring output
 
     def test_include_enabled(self):
         test_content = "Content from include file."
@@ -120,11 +116,11 @@ class ReSt2HtmlTests(BaseCreoleTest):
         with tempfile.NamedTemporaryFile() as temp:
             temp.write(test_content)
             temp.flush()
-            self.assert_rest2html("""
+            self.assert_rest2html(f"""
                 Enable include and test it.
-                
-                .. include:: %s
-            """ % temp.name, """
+
+                .. include:: {temp.name}
+            """, """
                 <p>Enable include and test it.</p>
                 <p>Content from include file.</p>
             """, file_insertion_enabled=True, input_encoding="utf-8")
@@ -132,18 +128,18 @@ class ReSt2HtmlTests(BaseCreoleTest):
     def test_raw_disabled_by_default(self):
         self.assert_rest2html("""
             Raw directive should be disabled by default.
-            
+
             .. raw:: html
 
                <hr width=50 size=10>
         """, """
             <p>Raw directive should be disabled by default.</p>
-        """, report_level=3) # Set log level to "error" to suppress the waring output
+        """, report_level=3)  # Set log level to "error" to suppress the waring output
 
     def test_raw_enabled(self):
         self.assert_rest2html("""
             Now RAW is enabled.
-            
+
             .. raw:: html
 
                <hr width=50 size=10>
